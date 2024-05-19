@@ -39,5 +39,13 @@ To get your Shocker ID, find the shocker you want and click the 3 dots, Edit, th
 
 `WHITELIST` controls if the blacklist should be treated as a whitelist instead (`True`/`False`) (Default `False`)
 
+## Commands
+
+(These can be used by anyone not on the blacklist, must be sent as a PM)
+
+`/shock` sends a shock request of varying strength and duration depending on your configuration
+
+`/vibrate` sends a vibrate request of varying strength and duration depending on your configuration
+
 ## Notes
 Currently the program does not support specifying strength and duration through Telegram, it picks random values from the ranges specified in the environment variables.
