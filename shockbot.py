@@ -1,11 +1,9 @@
 from telethon import TelegramClient, events
-import asyncio
 import logging
 from datetime import datetime, timedelta
 import requests
 import re
 import os
-import random
 from dotenv import load_dotenv
 logging.basicConfig(level=logging.ERROR)
 load_dotenv()
@@ -59,71 +57,97 @@ headers = {'accept': 'application/json', 'OpenShockToken': SHOCK_API, 'Content-T
 next_shock = datetime.now()
 next_vibe = datetime.now()
 
+# Define a general usage string
+USAGE = f'''Usage: /shock|vibrate <strength> <duration>
+Min, max shock strength: {SHOCK_STR_MIN}, {SHOCK_STR_MAX} % 
+Min, max shock length: {SHOCK_DUR_MIN}, {SHOCK_DUR_MAX / 1000} s
+Min, max vibe strength: {VIBE_STR_MIN}, {VIBE_STR_MAX} %
+Min, max vibe length: {VIBE_DUR_MIN}, {VIBE_DUR_MAX / 1000} s'''
+
+# This function handles the two actions
+async def command(event, cmd):
+    global next_shock
+    global next_vibe
+
+    # Get action and its parameters from the command args
+    action = cmd[0].split('/')[1].capitalize()
+    action_strength = cmd[1]
+    action_length = int(cmd[2] * 1000)
+
+    # Determine the correct length and strength depending on the type of the action
+    match action:
+        case 'Shock':
+            if action_strength > SHOCK_STR_MAX: action_strength = SHOCK_STR_MAX
+            if action_strength < SHOCK_STR_MIN: action_strength = SHOCK_STR_MIN
+            if action_length > SHOCK_DUR_MAX: action_length = SHOCK_DUR_MAX
+            if action_length < SHOCK_DUR_MIN: action_length = SHOCK_DUR_MIN
+        case 'Vibrate':
+            if action_strength > VIBE_STR_MAX: action_strength = VIBE_STR_MAX
+            if action_strength < VIBE_STR_MIN: action_strength = VIBE_STR_MIN
+            if action_length > VIBE_DUR_MAX: action_length = VIBE_DUR_MAX
+            if action_length < VIBE_DUR_MIN: action_length = VIBE_DUR_MIN
+
+    sender = await client.get_entity(event.sender_id)
+    if (event.sender_id not in blacklisted_ids and not WHITELIST) or (event.sender_id in blacklisted_ids and WHITELIST):
+        # If enough time has passed since last action
+        if datetime.now() > next_shock:
+            print(f'{action} request received from {sender.first_name} ({event.sender_id})')
+        
+            # Disable action for <action>_COOLDOWN seconds
+            next_shock = datetime.now() + timedelta(seconds = SHOCK_COOLDOWN)
+            
+            # Message to send to the API
+            payload = {'shocks': [{'id': SHOCK_ID, 'type': action, 'intensity': action_strength,
+                       'duration': action_length, 'exclusive': True}], 'customName': 'string'}
+            
+            # Send the request and save the response
+            response = requests.post(url = url, headers = headers, json = payload)
+            
+            # If everything went okay, reply with success
+            if response.status_code == 200:
+                await event.reply(f'(OpenShock) {action} sent successfully.')
+            print(f'{datetime.now()}: {response.content}')
+            
+        # If not enough time has passed, say how long is left
+        else:
+            print(f'{action} request from {sender.first_name} ({event.sender_id}) denied due to cooldown.')
+            await event.reply(f'(OpenShock) Next {action.lower()} available in {str((next_shock - datetime.now()).seconds)} seconds.')
+
 # On new message received that starts with "/"
 @client.on(events.NewMessage(pattern='^/.+'))
 async def main(event):
-    global next_shock
-    global next_vibe
-    
     # Is it a PM?
     if event.is_private:
-    
-        # Is the message is a valid command?
-        if event.raw_text.lower() == '/shock' or event.raw_text.lower() == '/vibrate':
-        
-            # Fetches the user, checks if they are not on the blacklist (or are on the whitelist if in whitelist mode)
-            sender = await client.get_entity(event.sender_id)
-            if (event.sender_id not in blacklisted_ids and not WHITELIST) or (event.sender_id in blacklisted_ids and WHITELIST):
+        # Split args by space to a list
+        cmd = event.raw_text.lower().split(" ")
+
+        # Try to convert the len, dur args to numbers from string, if missing, set them to 0
+        try:
+            cmd[1] = int(cmd[1])
+            cmd[2] = float(cmd[2])
+        except IndexError:
+            cmd.extend([0, 0])
+        # Reply with the usage if the args are not numbers
+        except ValueError:
+            await event.reply(f'The supplied arguments are not numbers. {USAGE}')
+            return
             
-                # Was it a shock command?
-                if event.raw_text.lower() == '/shock':
-                
-                    # If enough time has passed since last shock
-                    if datetime.now() > next_shock:
-                        print('Shock request received from {} ({})'.format(sender.first_name,event.sender_id))
-                    
-                        # Disable shocking for SHOCK_COOLDOWN seconds
-                        next_shock = datetime.now() + timedelta(seconds=SHOCK_COOLDOWN)
-                        
-                        # Message to send to the API, choses a random strength and duration
-                        payload = {'shocks': [{'id': SHOCK_ID, 'type': 'Shock', 'intensity': random.randint(SHOCK_STR_MIN,SHOCK_STR_MAX), 'duration': random.randint(SHOCK_DUR_MIN,SHOCK_DUR_MAX), 'exclusive': True}], 'customName': 'string'}
-                        
-                        # Send the request and save the response
-                        response = requests.post(url=url,headers=headers,json=payload)
-                        
-                        # If everything went okay, reply with success
-                        if response.status_code == 200:
-                            await event.reply('(OpenShock) Shock sent successfully.')
-                        print(response.content)
-                        
-                    # If not enough time has passed, say how long is left
-                    else:
-                        print('Shock request from {} ({}) denied due to cooldown.'.format(sender.first_name,event.sender_id))
-                        await event.reply('(OpenShock) Next shock available in '+str((next_shock-datetime.now()).seconds)+' seconds.')
-                
-                
-                # Repeated code but for vibrations (TODO: Turn into a function so less code is repeated)
-                if event.raw_text.lower() == '/vibrate':
-                    if datetime.now() > next_vibe:
-                        print('Vibration request received from {} ({})'.format(sender.first_name,event.sender_id))
-                        next_vibe = datetime.now() + timedelta(seconds=VIBE_COOLDOWN)
-                        payload = {'shocks': [{'id': SHOCK_ID, 'type': 'Vibrate', 'intensity': random.randint(VIBE_STR_MIN,VIBE_STR_MAX), 'duration': random.randint(VIBE_DUR_MIN,VIBE_DUR_MAX), 'exclusive': True}], 'customName': 'string'}
-                        response = requests.post(url=url,headers=headers,json=payload)
-                        if response.status_code == 200:
-                            await event.reply('(OpenShock) Vibration sent successfully.')
-                        print(response.content)
-                    else:
-                        print('Vibration request from {} ({}) denied due to cooldown.'.format(sender.first_name,event.sender_id))
-                        await event.reply('(OpenShock) Next vibration available in '+str((next_vibe-datetime.now()).seconds)+' seconds.')
-            
-            # User that sent the request was denied, print in console.
-            else:
-                print('Command received from {} ({}) but was ignored due to your settings.'.format(sender.first_name,event.sender_id))
+        # Handle individual commands
+        match cmd[0]:
+            case '/shock':
+                await command(event, cmd)
+            case '/vibrate':
+                await command(event, cmd)
+            case _:
+                await event.reply(f'Unknown command. {USAGE}')
+                print(f'{datetime.now()}: Unknown command sent.')
 
 # Message to let you know the bot is working
 async def welcome_msg():
     me = await client.get_me()
-    print('Python script running as {} ({})'.format(me.first_name,me.id))
+    # First whitelisted ID is treated as the owner IF the blacklist is treated as a whitelist
+    await client.send_message(blacklisted_ids[0], "Ready!")
+    print(f'Python script running as {me.first_name} ({me.id})')
 
 # Run the bot
 client.start()
