@@ -62,7 +62,7 @@ USAGE = f'''Usage: /shock|vibrate <strength> <duration>
 Min, max shock strength: {SHOCK_STR_MIN} %, {SHOCK_STR_MAX} % 
 Min, max shock length: {SHOCK_DUR_MIN / 1000} s, {SHOCK_DUR_MAX / 1000} s
 Min, max vibe strength: {VIBE_STR_MIN} %, {VIBE_STR_MAX} %
-Min, max vibe length: {VIBE_DUR_MIN / 1000} %, {VIBE_DUR_MAX / 1000} s'''
+Min, max vibe length: {VIBE_DUR_MIN / 1000} s, {VIBE_DUR_MAX / 1000} s'''
 
 # This function handles the two actions
 async def command(event, cmd):
