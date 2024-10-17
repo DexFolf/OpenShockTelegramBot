@@ -37,15 +37,12 @@ To get your Shocker ID, find the shocker you want and click the 3 dots, Edit, th
 
 `BLACKLIST` is a list of Telegram profile IDs to block from sending commands, seperated with commas (e.g: `1234567,9876543`) (Default None)
 
-`WHITELIST` controls if the blacklist should be treated as a whitelist instead (`True`/`False`) (Default `False`)
+`WHITELIST` controls if the blacklist should be treated as a whitelist instead. If set, the first ID is treated as the owner (if running as a bot, not a user account) to send ready notifications upon startup (`True`/`False`) (Default `False`)
 
 ## Commands
 
 (These can be used by anyone not on the blacklist, must be sent as a PM)
 
-`/shock` sends a shock request of varying strength and duration depending on your configuration
+`/shock <strength> <duration>` sends a shock request of a given strength and duration. If any value is outside the configured range, defaults to the closest configured value
 
-`/vibrate` sends a vibrate request of varying strength and duration depending on your configuration
-
-## Notes
-Currently the program does not support specifying strength and duration through Telegram, it picks random values from the ranges specified in the environment variables.
+`/vibrate <strength> <duration>` sends a shock request of a given strength and duration. If any value is outside the configured range, defaults to the closest configured value
