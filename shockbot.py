@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import requests
 import re
 import os
+from sys import exit
 from dotenv import load_dotenv
 logging.basicConfig(level=logging.ERROR)
 load_dotenv()
@@ -25,7 +26,7 @@ SHOCK_ID = os.environ.get('SHOCK_ID')
 
 # Check if required variables are set
 if None in [API_ID,API_HASH,SHOCK_API,SHOCK_ID]:
-    raise Exception('ERROR: A required environment variable hasn\'t been set! Check the README!')
+    print('ERROR: A required environment variable hasn\'t been set! Check the README!')
     exit(1)
 
 # Create a Telegram client
