@@ -73,7 +73,11 @@ urls = {
 }
 
 # Message header that will authenticate with OpenShock when sending requests
-headers = {'accept': 'application/json', 'OpenShockToken': SHOCK_API, 'Content-Type': 'application/json'}
+headers = {
+    'accept': 'application/json',
+    'OpenShockToken': SHOCK_API,
+    'Content-Type': 'application/json'
+}
 
 # Initialise cooldowns (available immediately when bot started)
 cooldowns = {
@@ -191,8 +195,16 @@ async def command(event, sender, cmd):
             cooldowns[action] = datetime.now() + timedelta(seconds = action_cooldown)
             
             # Message to send to the API
-            payload = {'shocks': [{'id': SHOCK_ID, 'type': action, 'intensity': action_strength,
-                       'duration': action_length, 'exclusive': True}], 'customName': 'string'}
+            payload = {
+                'shocks': [{
+                    'id': SHOCK_ID,
+                    'type': action,
+                    'intensity': action_strength,
+                    'duration': action_length, 
+                    'exclusive': True
+                }],
+                # Message that will show up in Logs and OSC
+                'customName': 'Telegram'}
             
             # Send the request and save the response
             response = requests.post(url = urls['shock'], headers = headers, json = payload)
