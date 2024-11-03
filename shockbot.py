@@ -249,7 +249,7 @@ async def main(event):
                 await event.reply(f'{msg_prefix}The supplied arguments are not numbers. {USAGE}')
             return
         
-        sender = await client.get_entity(event.sender_id)
+        sender = await event.get_sender() #client.get_entity(event.sender_id) will fail on first interaction from a user, so this is used instead
 
         if is_allowed(event):
             # Handle individual commands
